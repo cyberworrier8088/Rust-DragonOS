@@ -22,4 +22,4 @@ qemu-system-x86_64 -drive format=raw,file=bootimage-Rust-DragonOS.bin
 
 
 ## demo
-![demo](assets\Demo.png)
+![demo](assets/demo.png)
