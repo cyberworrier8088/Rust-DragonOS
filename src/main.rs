@@ -2,86 +2,69 @@
 // credits: https://github.com/phil-opp/blog_os
 // https://os.phil-opp.com/
 // This made that inspired by those sources
+// :}
+// Enjoy!
+// comiler directives
+#![no_std] // remove std lib
+#![no_main] // remove main function entry point
+#![feature(custom_test_frameworks)] // enable custom test framework
+#![test_runner(Rust_DragonOS::test_runner)] // set test runner
+#![reexport_test_harness_main = "test_main"] // reexport test main
 
-#![no_std]
-#![no_main]
-#![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
-#![reexport_test_harness_main = "test_main"]
+// use needed crates and func in anthor files
+use core::panic::PanicInfo; // panic handler
+use Rust_DragonOS::println; // print func 
+use Rust_DragonOS::vga_buffer::WRITER; // vga buffer
 
-mod serial;
-mod vga_buffer;
 
-use core::panic::PanicInfo;
+// entry point
+#[unsafe(no_mangle)] // disable name mangling
+pub extern "C" fn _start() -> ! { // c entry point
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failed = 0x11,
+    // Terminall printing banner
+    {
+    let mut writer = WRITER.lock();
+    writer.clear_screen();
+
+    writer.write_centered(5,  "                 / \\  //\\\\");
+    writer.write_centered(6,  "        |\\___/|      \\\\//  \\\\");
+    writer.write_centered(7,  "        /O  O  \\__   //    \\\\");
+    writer.write_centered(8,  "       /     /  \\/_/      //");
+    writer.write_centered(9,  "       \\_^_\\'/   \\/_   _//");
+    writer.write_centered(10, "       //_^_/     \\/_ //");
+    writer.write_centered(11, "    ( //) |        \\///");
+    writer.write_centered(12, "  ( / /) _|_ /   )  //");
+    writer.write_centered(13, " ( // /) '/,_ _ _/  ( ;");
+    writer.write_centered(15, "        === DragonOS ===");
+    writer.write_centered(17, "      DragonOS v0.1.0");
 }
-
-pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
-
-    unsafe {
-        let mut port = Port::new(0xf4);
-        port.write(exit_code as u32);
-    }
-}
-
-pub trait Testable {
-    fn run(&self);
-}
-
-impl<T> Testable for T
-where
-    T: Fn(),
-{
-    fn run(&self) {
-        serial_print!("{}...\t", core::any::type_name::<T>());
-        self();
-        serial_println!("[ok]");
-    }
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    println!("Hello, world!");
-
     #[cfg(test)]
     test_main();
 
     loop {}
 }
 
-#[cfg(test)]
-pub fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test.run();
-    }
-    exit_qemu(QemuExitCode::Success);
-    loop {}
-}
-
-#[cfg(not(test))]
+// panic handler
+#[cfg(not(test))] // cfg = configuration, not test
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("Panic: {}", info);
+    println!("{}", info);
     loop {}
 }
 
+// test panic handler
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-    loop {}
+    Rust_DragonOS::test_panic_handler(info)
 }
 
+// test case
 #[test_case]
 fn trivial_assertion() {
-    assert_eq!(1, 1);
+    assert_eq!(1, 1); // assert that 1 equals 1
 }
+
+////////////////////////////////////////////
+// end of file                            //
+////////////////////////////////////////////
